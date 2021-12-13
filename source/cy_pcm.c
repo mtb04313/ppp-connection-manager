@@ -268,7 +268,7 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
             break;
         }
 
-        if (!cy_modem_powerup(modem_p)) {
+        if (!cy_modem_powerup(modem_p, connect_params_p->connect_ppp)) {
             CY_LOGE(TAG, "%s [%d]: cy_modem_powerup failed", __FUNCTION__, __LINE__);
             break;
         }
@@ -374,7 +374,7 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
 
     } while (false);
 
-    cy_modem_delete(modem_p);
+    cy_modem_delete(modem_p, true);
     cy_ppp_netif_delete(ppp_netif_p);
 
     // release the mutex
@@ -383,7 +383,7 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
     return CY_RSLT_PCM_FAILED;
 }
 
-cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec)
+cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec, bool power_off_modem)
 {
     cy_rslt_t result;
 
@@ -412,16 +412,18 @@ cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec)
             }
         }
 
-        if (!cy_modem_powerdown(s_modem_p)) {
-            CY_LOGE(TAG, "%s [%d]: modem_powerdown failed", __FUNCTION__, __LINE__);
-            break;
+        if (power_off_modem) {
+            if (!cy_modem_powerdown(s_modem_p)) {
+                CY_LOGE(TAG, "%s [%d]: modem_powerdown failed", __FUNCTION__, __LINE__);
+                break;
+            }
         }
 
         result = CY_RSLT_SUCCESS;
 
     } while (false);
 
-    cy_modem_delete(s_modem_p);
+    cy_modem_delete(s_modem_p, power_off_modem);
     s_modem_p = NULL;
 
     cy_ppp_netif_delete(s_ppp_netif_p);

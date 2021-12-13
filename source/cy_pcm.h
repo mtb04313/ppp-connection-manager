@@ -114,7 +114,7 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
                                 cy_wcm_ip_address_t *ip_addr_p,
                                 uint32_t timeout_msec);
 
-cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec);
+cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec, bool power_off_modem);
 
 cy_rslt_t cy_pcm_set_default_connectivity(connectivity_t type);
 
