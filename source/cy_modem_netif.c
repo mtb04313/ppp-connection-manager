@@ -160,7 +160,7 @@ bool cy_modem_netif_start(cy_modem_t *modem_p,
         result = cy_ppp_netif_start(ppp_netif_p);
     }
 
-    return true;
+    return result;
 }
 
 bool cy_modem_netif_stop( cy_modem_t *modem_p,

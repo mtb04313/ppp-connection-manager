@@ -61,7 +61,7 @@
 #define BIT1     0x00000002
 #define BIT0     0x00000001
 
-#define WAIT_INTERVAL_FOR_PPP_CONNECT   20000
+#define WAIT_INTERVAL_FOR_PPP_CONNECT   90000 // 90sec for BG96 //was 20000 (SimCom)
 #define WAIT_INTERVAL_FOR_IP_ADDRESS    1000
 
 #define WAIT_INTERVAL_FOR_PPP_STOP      3000
@@ -154,6 +154,12 @@ static void ppp_client_ip_event(int32_t event_id,
         cy_rtos_get_time(&now);
         CY_LOGI(TAG, "{%ld} PPP Disconnected", now);
         s_is_ppp_connected = false;
+
+        if (s_event_group != NULL) {
+            result = cy_rtos_setbits_event(&s_event_group,
+                                           ABORT_BIT,
+                                           false);
+        }
 
     } else if (event_id == IP_EVENT_PPP_GOT_IPV6) {
         ip_event_got_ip6_t *event_p = (ip_event_got_ip6_t *)event_data_p;
@@ -275,8 +281,16 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
 
         if (connect_params_p->connect_ppp) {
 
+            // reset the IP address
             ReturnAssert(ip_addr_p != NULL, CY_RSLT_PCM_FAILED);
             memset(ip_addr_p, 0, sizeof(*ip_addr_p));
+
+            // reset the event bits
+            if (s_event_group != NULL) {
+                result = cy_rtos_clearbits_event(&s_event_group,
+                                                 CONNECT_BIT | ABORT_BIT,
+                                                 false);
+            }
 
             ppp_netif_p = cy_ppp_netif_new(&ppp_netif_config);
             if (ppp_netif_p == NULL) {
@@ -302,12 +316,14 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
             CY_LOGD(TAG, "%s [%d]: Wait %d ms for CONNECT",
                     __FUNCTION__, __LINE__, WAIT_INTERVAL_FOR_PPP_CONNECT);
 
-            uxBits = CONNECT_BIT;
+            uxBits = CONNECT_BIT | ABORT_BIT;
             result = cy_rtos_waitbits_event(   &s_event_group,
                                                &uxBits,
                                                true, //bool clear,
-                                               true, //bool all,
+                                               false, //bool all,
                                                WAIT_INTERVAL_FOR_PPP_CONNECT);
+
+
             (void)result;
 
             if ((uxBits & CONNECT_BIT) == 0) {
