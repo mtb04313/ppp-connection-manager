@@ -80,6 +80,7 @@ static cy_modem_t *s_modem_p = NULL;
 static cy_ppp_netif_t *s_ppp_netif_p = NULL;
 static bool s_is_pcm_initialized = false;
 static bool s_is_ppp_connected = false;
+static bool s_is_modem_powered_on = false;
 
 static connectivity_t s_default_connectivity = CELLULAR_CONNECTIVITY;
 static cy_mutex_t s_operationMutex;  /* mutex prevents concurrent operations */
@@ -274,9 +275,15 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
             break;
         }
 
-        if (!cy_modem_powerup(modem_p, connect_params_p->connect_ppp)) {
-            CY_LOGE(TAG, "%s [%d]: cy_modem_powerup failed", __FUNCTION__, __LINE__);
-            break;
+        // If modem is already powered on, and we are connecting the modem for LPA
+        // then don't repeat the power-up step
+        if (!s_is_modem_powered_on || connect_params_p->connect_ppp) {
+            if (!cy_modem_powerup(modem_p, connect_params_p->connect_ppp)) {
+                CY_LOGE(TAG, "%s [%d]: cy_modem_powerup failed", __FUNCTION__, __LINE__);
+                break;
+            }
+
+            s_is_modem_powered_on = true;
         }
 
         if (connect_params_p->connect_ppp) {
@@ -390,6 +397,7 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
 
     } while (false);
 
+    s_is_modem_powered_on = false;
     cy_modem_delete(modem_p, true);
     cy_ppp_netif_delete(ppp_netif_p);
 
@@ -433,6 +441,8 @@ cy_rslt_t cy_pcm_disconnect_modem(uint32_t timeout_msec, bool power_off_modem)
                 CY_LOGE(TAG, "%s [%d]: modem_powerdown failed", __FUNCTION__, __LINE__);
                 break;
             }
+
+            s_is_modem_powered_on = false;
         }
 
         result = CY_RSLT_SUCCESS;
