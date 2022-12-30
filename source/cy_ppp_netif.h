@@ -45,7 +45,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "cy_lwip.h"
+//#include "cy_lwip.h"
 #include "netif/ppp/pppapi.h"
 #include "cy_pcm_user.h"
 
