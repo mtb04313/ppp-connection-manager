@@ -65,6 +65,8 @@ extern "C" {
   ip4_addr3_16(ipaddr),     \
   ip4_addr4_16(ipaddr)
 
+
+#if (PPP_IPV6_SUPPORT)
 #define IPV6_FORMAT "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x"
 
 /* IP6_ADDR_BLOCK1(ip6addr) defined in lwip/src/include/lwip/ip6_addr.h */
@@ -77,13 +79,17 @@ extern "C" {
   IP6_ADDR_BLOCK6(&(ipaddr)), \
   IP6_ADDR_BLOCK7(&(ipaddr)), \
   IP6_ADDR_BLOCK8(&(ipaddr))
+#endif
+
 
 typedef struct {
     ip_addr_t ip;
 } cy_ppp_netif_dns_info_t;
 
 typedef enum {
+#if (PPP_IPV6_SUPPORT)
     IP_EVENT_PPP_GOT_IPV6,
+#endif
     IP_EVENT_PPP_GOT_IPV4,
     IP_EVENT_PPP_LOST_IP,
 } ip_event_t;
@@ -94,10 +100,11 @@ typedef struct {
     ip4_addr_t gw;
 } cy_ppp_netif_ip_info_t;
 
+#if (PPP_IPV6_SUPPORT)
 typedef struct {
     ip6_addr_t ip;
 } cy_ppp_netif_ip6_info_t;
-
+#endif
 
 typedef void (*on_error_event_fn)(int32_t event_id, void *event_data_p);
 typedef void (*on_ip_event_fn)(int32_t event_id, void *event_data_p);
@@ -124,12 +131,12 @@ typedef struct {
     bool ip_changed;
 } ip_event_got_ip_t;
 
-
+#if (PPP_IPV6_SUPPORT)
 typedef struct {
     cy_ppp_netif_t *ppp_netif_p;
     cy_ppp_netif_ip6_info_t ip6_info;
 } ip_event_got_ip6_t;
-
+#endif
 
 typedef struct cy_ppp_netif_config {
     on_error_event_fn error_event_fn;

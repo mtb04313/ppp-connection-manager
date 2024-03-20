@@ -132,12 +132,19 @@ static void ppp_client_ip_event(int32_t event_id,
         cy_ppp_netif_get_dns_info(ppp_netif_p,
                                   0,
                                   &dns_info);
+#if (PPP_IPV6_SUPPORT)
         CY_LOGI(TAG, "Name Server1: " IPV4_FORMAT, IPV4_TO_STR(&dns_info.ip.u_addr.ip4));
-
+#else
+        CY_LOGI(TAG, "Name Server1: " IPV4_FORMAT, IPV4_TO_STR(&dns_info.ip));
+#endif
         cy_ppp_netif_get_dns_info(ppp_netif_p,
                                   1,
                                   &dns_info);
+#if (PPP_IPV6_SUPPORT)
         CY_LOGI(TAG, "Name Server2: " IPV4_FORMAT, IPV4_TO_STR(&dns_info.ip.u_addr.ip4));
+#else
+        CY_LOGI(TAG, "Name Server2: " IPV4_FORMAT, IPV4_TO_STR(&dns_info.ip));
+#endif
         CY_LOGI(TAG, "============================");
 
         s_is_ppp_connected = true;
@@ -162,6 +169,7 @@ static void ppp_client_ip_event(int32_t event_id,
                                            false);
         }
 
+#if (PPP_IPV6_SUPPORT)
     } else if (event_id == IP_EVENT_PPP_GOT_IPV6) {
         ip_event_got_ip6_t *event_p = (ip_event_got_ip6_t *)event_data_p;
         cy_time_t now = 0;
@@ -181,6 +189,7 @@ static void ppp_client_ip_event(int32_t event_id,
                                            false);
             (void)result;
         }
+#endif
     }
 }
 
@@ -329,8 +338,6 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
                                                true, //bool clear,
                                                false, //bool all,
                                                WAIT_INTERVAL_FOR_PPP_CONNECT);
-
-
             (void)result;
 
             if ((uxBits & CONNECT_BIT) == 0) {
@@ -374,6 +381,25 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
             // read the ip address
             cy_rtos_delay_milliseconds(WAIT_INTERVAL_FOR_IP_ADDRESS);
 
+#if (PPP_IPV6_SUPPORT)
+            u32_t temp_v4 = ppp_netif_p->lwip_netif_p->ip_addr.u_addr.ip4.addr;
+            CY_LOGD(TAG, "temp_v4: %d.%d.%d.%d",
+                    (uint8_t)temp_v4,
+                    (uint8_t)(temp_v4 >> 8),
+                    (uint8_t)(temp_v4 >> 16),
+                    (uint8_t)(temp_v4 >> 24));
+
+            u32_t* p_temp_v6 = ppp_netif_p->lwip_netif_p->ip_addr.u_addr.ip6.addr;
+            CY_LOGD(TAG, "temp_v6: %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
+                    (uint16_t)HIWORD(p_temp_v6[0]),
+                    (uint16_t)LOWORD(p_temp_v6[0]),
+                    (uint16_t)HIWORD(p_temp_v6[1]),
+                    (uint16_t)LOWORD(p_temp_v6[1]),
+                    (uint16_t)HIWORD(p_temp_v6[2]),
+                    (uint16_t)LOWORD(p_temp_v6[2]),
+                    (uint16_t)HIWORD(p_temp_v6[3]),
+                    (uint16_t)LOWORD(p_temp_v6[3]));
+
             if (ppp_netif_p->lwip_netif_p->ip_addr.u_addr.ip4.addr != 0) {
                 ip_addr_p->version = CY_WCM_IP_VER_V4;
                 ip_addr_p->ip.v4 = ppp_netif_p->lwip_netif_p->ip_addr.u_addr.ip4.addr;
@@ -384,7 +410,17 @@ cy_rslt_t cy_pcm_connect_modem( const cy_pcm_connect_params_t *connect_params_p,
                         ppp_netif_p->lwip_netif_p->ip_addr.u_addr.ip6.addr,
                         sizeof(ip_addr_p->ip.v6));
             }
+#else
+            u32_t temp_v4 = ppp_netif_p->lwip_netif_p->ip_addr.addr;
+            CY_LOGD(TAG, "temp_v4: %d.%d.%d.%d",
+                    (uint8_t)temp_v4,
+                    (uint8_t)(temp_v4 >> 8),
+                    (uint8_t)(temp_v4 >> 16),
+                    (uint8_t)(temp_v4 >> 24));
 
+            ip_addr_p->version = CY_WCM_IP_VER_V4;
+            ip_addr_p->ip.v4 = ppp_netif_p->lwip_netif_p->ip_addr.addr;
+#endif
             s_ppp_netif_p = ppp_netif_p;
         }
 

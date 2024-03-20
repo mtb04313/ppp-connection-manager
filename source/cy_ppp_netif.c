@@ -82,9 +82,16 @@ static void on_ppp_status_changed(ppp_pcb *pcb_p,
         CY_LOGI(TAG, "Connected");
 
         if (pcb_p->if4_up && !ip_addr_isany(&pppif->ip_addr)) {
+#if PPP_IPV6_SUPPORT
             evt.ip_info.ip.addr = pppif->ip_addr.u_addr.ip4.addr;
             evt.ip_info.gw.addr = pppif->gw.u_addr.ip4.addr;
             evt.ip_info.netmask.addr = pppif->netmask.u_addr.ip4.addr;
+#else
+            // only IPv4 supported
+            evt.ip_info.ip.addr = pppif->ip_addr.addr;
+            evt.ip_info.gw.addr = pppif->gw.addr;
+            evt.ip_info.netmask.addr = pppif->netmask.addr;
+#endif
 
             if (ppp_netif_p->ip_event_fn != NULL) {
                 ppp_netif_p->ip_event_fn( IP_EVENT_PPP_GOT_IPV4,
